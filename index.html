@@ -39,6 +39,8 @@
                 roadWidthBorder: 25,
                 cameraSpeed: 5,
                 
+                kontener: 0,
+                punkty: 0,
             }
 
             //Naciśnięcie przycisku
@@ -160,6 +162,7 @@
                         gameManager.gameover();
                     } else if (this.type == "obstacle") {
                         objectOnRoadManager.killMe(this);
+                        gameManager.punktyUp();
                     } else {
                         console.log("ERROR1: Nieznany obiekt");
                     }
@@ -292,7 +295,7 @@
                 buildNewStart(){
                     this.basedTrackPointList.push(new BasedTrackPoint(0, ctx2.canvas.width/2, ctx2.canvas.height, 0) );
                     this.newBasedTrackPoint();
-                
+                    Config.kontener = 0;
                     for(let i = 0; i <= this.densityBasedTrackPoint*100; i++){
                         this.newBasedTrackPoint();
                         this.newExtendedTrackPoint(i); 
@@ -364,14 +367,12 @@
                 
             }
 
-            
             class GameManager{
                 basedPoindEndIndex;
                 constructor () {
                     this.basedPoindEnd;
                     this.selectBasedTrackPointEndStatment();
                 }
-            
                 
                 selectBasedTrackPointEndStatment(){
                     let maxDelta = 999999;
@@ -381,7 +382,7 @@
                         this.basedPoindEndIndex = i; 
                         } 
                         else{
-                        break; 
+                            break; 
                         } 
                     }
                 }
@@ -398,9 +399,9 @@
                     let leftEndStatment = end - Config.roadWidthAsphalt - Config.roadWidthBorder;
                     let rightEndStatment = end + Config.roadWidthAsphalt + Config.roadWidthBorder - 20;
                     
-                    if(Config.tick<trackManager.densityBasedTrackPoint) {
+                    if(Config.kontener<trackManager.densityBasedTrackPoint) {
                         driver.posX = en.posX;
-                        Config.tick++;
+                        Config.kontener++;
                     }
                     if(driver.posX < leftEndStatment || driver.posX > rightEndStatment){
                         this.gameover();
@@ -415,10 +416,14 @@
                     trackManager.destroyTrack();
                         trackManager.buildNewStart();
                         
-                        Config.score = 0;
+                        Config.punkty = 0;
                         Config.level = 1;
                         
-                        Config.tick=0;
+                        Config.kontener=0;
+                }
+
+                punktyUp() {
+                    Config.punkty += 10;
                 }
 
             }
@@ -428,6 +433,7 @@
                 trackManager.meshRoad.draw();
                 objectOnRoadManager.draw();
                 driver.draw();
+                Counter.draw();
             }
 
             function physicUpdate(){
@@ -437,11 +443,22 @@
                 gameManager.gameoverstatment();
             }
 
+            class Counter {
+                constructor () {
+                }
+            draw() {
+                    ctx2.font = "20px Times New Roman";
+                    ctx2.fillStyle = "darkgrey";   
+                    ctx2.fillText("Zdobyles:   " + Config.punkty, 675, 15);
+                }
+            }
+
             const driver = new Driver (355, 370);
             const camera = new Camera (0, 0);
             const objectOnRoadManager = new ObjectOnRoadManager ();
             const trackManager = new TrackManager ();
             const gameManager = new GameManager ();
+            const counter = new Counter ();
 
             setInterval(physicUpdate, Config.frameUpdate); 
             setInterval(draw, Config.physicUpdate); 
