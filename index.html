@@ -20,6 +20,8 @@
             var ctx2 = $("#canvas")[0].getContext("2d");
             ctx2.canvas.width  = 800;
             ctx2.canvas.height = 600;
+            const dziura = 20;
+            const kanister = 15;
             
             var Config = {
                 frameUpdate: 5,
@@ -164,8 +166,6 @@
             }
             
             collider(){
-                
-                
                 if(Math.abs((this.posX - 10) - (driver.posX + 8)) < 20 && Math.abs((this.posY + 10 + camera.posY) - (driver.posY + 12)) < 15){
                     if (this.type == "point"){
                         gameManager.gameover();
@@ -182,10 +182,10 @@
                 ctx2.beginPath();
                 if (this.type == "point"){
                     ctx2.fillStyle = "red";
-                    ctx2.rect(this.posX, this.posY+camera.posY, 25, 25); 
+                    ctx2.rect(this.posX, this.posY+camera.posY, dziura, dziura); 
                 } else if (this.type == "obstacle") {
                     ctx2.fillStyle = "lightgreen";
-                    ctx2.rect(this.posX, this.posY+camera.posY, 20, 20); 
+                    ctx2.rect(this.posX, this.posY+camera.posY, kanister, kanister); 
                 } else {
                     console.log("ERROR2: Nieznany typ obiektu");
                 }
@@ -282,7 +282,7 @@
                     ctx2.lineTo(triangle.c.posX + camera.posX, triangle.c.posY + camera.posY);
                     ctx2.closePath();
                     //barwy drogi
-                    if(color % 12 == 0 || color % 12 == 4) color = "#f5f5f5"; //f5f5f5
+                    if(color % 12 == 0 || color % 12 == 4) color = "#000000"; //f5f5f5
                     if(color % 12 == 2 || color % 12 == 8) color = "#222222";
                     if(color % 12 == 6 || color % 12 == 10) color = "#ffff00";
                     ctx2.fillStyle = color;
@@ -308,8 +308,7 @@
                         this.newBasedTrackPoint();
                         this.newExtendedTrackPoint(i); 
                     }
-                    this.meshRoad = new Mesh(this.basedTrackPointList, this.extendedTrackPointList);
-                    
+                    this.meshRoad = new Mesh(this.basedTrackPointList, this.extendedTrackPointList);  
                 }
 
                 newBasedTrackPoint() { 
@@ -344,7 +343,6 @@
                         base.posX - Config.roadWidthBorder - Config.roadWidthAsphalt,
                         base.posY,
                         0));
-                    //lewa
                     this.extendedTrackPointList.push(new BasedTrackPoint(
                         basedTrackPointIndex.index + 1,
                         base.posX - Config.roadWidthAsphalt,
@@ -356,7 +354,6 @@
                         base.posX + Config.roadWidthAsphalt,
                         base.posY,
                         0));
-                    //prawa
                     this.extendedTrackPointList.push(new BasedTrackPoint(
                         basedTrackPointIndex.index + 3,
                         base.posX + Config.roadWidthBorder + Config.roadWidthAsphalt,
