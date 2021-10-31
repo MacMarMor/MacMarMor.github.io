@@ -1,0 +1,22 @@
+*{
+    margin: 1px;
+    padding: 1px;
+    border: 1px solid #000000;
+    position: bottom;
+    vertical-align: baseline;
+    text-decoration: none;
+    list-style-type: none;
+    outline: 0;
+    font-family: 'Times-New-Roman';
+    line-height: 1.4em;
+}
+
+#canvas {
+    background-color: darkgreen;
+    margin: 0 auto;
+}
+
+#camera {
+    background-color: darkgreen;
+    margin: 0 auto;
+}

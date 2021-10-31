@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Animacja-2</title>
+    <link rel="stylesheet" type="text/css" href="style/style.css" title="stylowo">
+    <script src="style/jquery-2.2.2.min.js"></script>
+    
+</head>
+
+<!--
+1. Proszę przygotować animację, w której wyścigówka (prostokąt z kołam) jedzie na wprost po drodze. Jako drogę proszę wykorzystać szary prostokąt (od góry do dołu) z białą przerywaną linią (białe prostokąty) na środku oraz biało czerwonymi liniami po bokach, które się przesuwają (symulując ruch). Sterowanie należy zrealizować za pomocą strzałek/kursorów.
+2. Proszę dodać pojawiające się przeszkody, które należy omijać
+3. Proszę dodać "bonusy", które należy "zbierać" samochodem po najechaniu na nie. Liczbę zdobytych bonusów proszę przedstawić w formie punktacji (jako część canvasa, a nie labela poza nim).
+-->
+
+<body onload="">
+    <canvas id="canvas"></canvas>
+    <script>
+        $( window ).on( "load", function() {
+            var ctx2 = $("#canvas")[0].getContext("2d");
+            ctx2.canvas.width  = 800;
+            ctx2.canvas.height = 600;
+            
+            var Config = {
+                frameUpdate: 5,
+                physicUpdate: 5,
+                size: 100,
+                //podpisanie klawiszy
+                moveLeft: 65, // 65
+                moveRight: 68, //58
+                moveLeftAlt: 37, //37
+                moveRightAlt: 39, //39
+                //matematyka do rysowania drogi
+                spaceBetweenBasedTrackPoint: 50,
+                singleccelerationCurve: 1, 
+                maxAccelerationCurve: 10,
+                maxRadiusCurve: 45,
+                roadWidthAsphalt: 150,
+                roadWidthBorder: 25,
+                cameraSpeed: 5,
+                
+            }
+
+            //Naciśnięcie przycisku
+            document.addEventListener('keyup', function(touch) {
+                if(touch.keyCode == Config.moveLeft || touch.keyCode == Config.moveLeftAlt ){
+                    driver.move("up");
+                }
+                if(touch.keyCode == Config.moveRight  || touch.keyCode == Config.moveRightAlt){
+                    driver.move("up");
+                }
+                
+            }, false);
+            
+            document.addEventListener('keydown', function(touch) {
+                if(touch.keyCode == Config.moveLeft || touch.keyCode == Config.moveLeftAlt ){
+                    driver.move("left");
+                }
+                if(touch.keyCode == Config.moveRight  || touch.keyCode == Config.moveRightAlt){
+                    driver.move("right");
+                }
+                
+            }, false);
+            
+            //Driver
+            class Driver {
+                car = new Image();
+                carL = new Image();
+                carR = new Image();
+            
+                moveLeft = false;
+                moveRight = false;
+                acceleration = 0;
+            
+                constructor(posX, posY, sizeX, sizeY) {
+                    this.car.src = "image/car.png";
+                    this.carL.src = "image/carLeft.png";
+                    this.carR.src = "image/carRight.png";
+                    this.posX = posX;
+                    this.posY = posY;
+                }
+                draw() {
+                    let carSize = Config.size/2;
+                    let carSizeLR = carSize*1.41;
+                    //lewo
+                    if(this.moveLeft) ctx2.drawImage(this.carL, this.posX-10, this.posY-10, carSizeLR, carSizeLR);
+                    //prawo
+                    else if(this.moveRight) ctx2.drawImage(this.carR, this.posX-20, this.posY-10, carSizeLR, carSizeLR);
+                    //do przodu
+                    else ctx2.drawImage(this.car, this.posX, this.posY, carSize, carSize);
+                }
+                move(dirMove){
+                    if (dirMove == "left"){
+                        this.moveLeft = true;
+                    
+                    } else if (dirMove == "right") {
+                        this.moveRight = true;
+                        
+                    } else if (dirMove == "up") {
+                        this.moveLeft = false;
+                        this.moveRight = false;
+                    }
+                    
+                }
+            
+                moveUpdate(){
+                    if (this.moveRight) this.acceleration += 5;
+                    if (this.moveLeft) this.acceleration -= 5;
+                    
+                    let max = 10;
+                    if(this.acceleration>max) this.acceleration = max;
+                    if(this.acceleration<-max) this.acceleration = -max;
+                    
+                    let c = 1;
+                    this.posX += this.acceleration;
+                    if(this.acceleration>c) this.acceleration -= c;
+                    else if(this.acceleration<-c) this.acceleration += c;
+                    else this.acceleration = 0;
+                }
+            }
+
+            class Camera{
+                constructor (posX, posY) {
+                    this.posX = posX;
+                    this.posY = posY;
+                }
+
+                update(deltaY){
+                    this.posY += deltaY;
+                }
+            }
+
+            class Vector2 {
+                constructor(posX, posY, acceleration){
+                    this.posX = posX;
+                    this.posY = posY;
+                    this.acceleration = acceleration;
+                }
+            }
+            
+            class BasedTrackPoint {
+                constructor (index, posX, posY, acceleration) {
+                    this.index = index;
+                    this.vector2 = new Vector2(posX, posY, acceleration);
+                }
+            }
+
+        
+
+            //stat
+
+            class MeshTriangle{
+                constructor (a, b, c) {
+                    this.a = a;
+                    this.b = b;
+                    this.c = c;
+                }
+            }
+            
+            class Mesh {
+                extendedTrackPointList = new Array; //rzeczy na drodze
+                basedTrackPointList = new Array; //srodek drogi
+                triangleList = new Array;
+
+                constructor (basedTrackPointList, extendedTrackPointList) {
+                    this.basedTrackPointList = basedTrackPointList;
+                    this.extendedTrackPointList = extendedTrackPointList;
+                    this.buildNewStart();
+                }
+                
+                buildNewStart(){
+                    for(let i = 0; i < (this.extendedTrackPointList.length - 4); i += 2){
+                        //droga
+                        if (i > 0 && i % 4 == 2) this.triangleLeftFromtriangleList(i - 1);
+                        if (i > 0 && i % 4 == 2) this.triangleRightFromtriangleList(i);
+                    
+                        //pobocze
+                        this.triangleLeftFromtriangleList(i);
+                        this.triangleRightFromtriangleList(i + 1);
+                    }
+                }
+                
+                triangleLeftFromtriangleList(i){
+                    let a = new Vector2(this.extendedTrackPointList[i].vector2.posX, this.extendedTrackPointList[i].vector2.posY);
+                    let b = new Vector2(this.extendedTrackPointList[i + 1].vector2.posX, this.extendedTrackPointList[i + 1].vector2.posY);
+                    let c = new Vector2(this.extendedTrackPointList[i + 4].vector2.posX, this.extendedTrackPointList[i + 4].vector2.posY);
+                    this.newTriangle(a, b, c);
+                }
+                triangleRightFromtriangleList(i){
+                    let a = new Vector2(this.extendedTrackPointList[i].vector2.posX, this.extendedTrackPointList[i].vector2.posY);
+                    let b = new Vector2(this.extendedTrackPointList[i + 3].vector2.posX, this.extendedTrackPointList[i + 3].vector2.posY);
+                    let c = new Vector2(this.extendedTrackPointList[i + 4].vector2.posX, this.extendedTrackPointList[i + 4].vector2.posY);
+                    this.newTriangle(a,b,c);
+                }
+
+                newTriangle(a,b,c){
+                    this.triangleList.push(new MeshTriangle(a, b, c) );
+                }
+
+                draw(){
+                    this.triangleList.forEach(this.drawTriangle);
+                }
+
+                drawTriangle(triangle, color){      
+                    ctx2.beginPath();
+                    ctx2.moveTo(triangle.a.posX + camera.posX, triangle.a.posY + camera.posY);
+                    ctx2.lineTo(triangle.b.posX + camera.posX, triangle.b.posY + camera.posY);
+                    ctx2.lineTo(triangle.c.posX + camera.posX, triangle.c.posY + camera.posY);
+                    ctx2.closePath();
+
+                    //barwy drogi
+                    if(color % 12 == 0 || color % 12 == 4) color = "#000000"; //f5f5f5
+                    if(color % 12 == 2 || color % 12 == 8) color = "#222222";
+                    if(color % 12 == 6 || color % 12 == 10) color = "#ffff00";
+                    ctx2.fillStyle = color;
+                    ctx2.fill();
+                }
+            }
+
+            class TrackManager{
+                basedTrackPointList = new Array; //srodek drogi
+                extendedTrackPointList = new Array;//rzeczy na drodze
+                
+                constructor () {
+                    this.spaceBetweenBasedTrackPoint = Config.spaceBetweenBasedTrackPoint;
+                    this.densityBasedTrackPoint = ctx2.canvas.height/this.spaceBetweenBasedTrackPoint;
+                    this.buildNewStart();
+                }
+
+                buildNewStart(){
+                    this.basedTrackPointList.push(new BasedTrackPoint(0, ctx2.canvas.width/2, ctx2.canvas.height, 0) );
+                    this.newBasedTrackPoint();
+                
+                    for(let i = 0; i <= this.densityBasedTrackPoint*100; i++){
+                        this.newBasedTrackPoint();
+                        this.newExtendedTrackPoint(i); 
+                    }
+                    this.meshRoad = new Mesh(this.basedTrackPointList, this.extendedTrackPointList);
+                    
+                }
+
+                newBasedTrackPoint() { 
+                    let prev = this.basedTrackPointList[this.basedTrackPointList.length-1];
+                    let rand = Math.round((Math.random() * 2 * Config.singleccelerationCurve) - 1)
+                    let acceleration = prev.vector2.acceleration + rand;
+                    
+                    if (acceleration > Config.maxAccelerationCurve) acceleration = Config.maxAccelerationCurve;
+                    else if (acceleration < -Config.maxAccelerationCurve) acceleration = -Config.maxAccelerationCurve;
+                    
+                    let calcX = (prev.vector2.posX + (acceleration * Config.maxRadiusCurve / this.spaceBetweenBasedTrackPoint) );
+            
+                    if (calcX+Config.roadWidthAsphalt+Config.roadWidthBorder>ctx2.canvas.width){
+                        calcX = prev.vector2.posX;acceleration = 0;
+                    }
+                    if (calcX-Config.roadWidthAsphalt-Config.roadWidthBorder<0){
+                        calcX = prev.vector2.posX;acceleration = 0;
+                    }
+                    
+                    
+                    this.basedTrackPointList.push(new BasedTrackPoint(
+                        prev.index + 1,
+                        calcX,
+                        prev.vector2.posY - this.spaceBetweenBasedTrackPoint,
+                        acceleration));
+                };
+                
+                newExtendedTrackPoint(basedTrackPointIndex){
+                    let index = this.extendedTrackPointList.length;
+                    let base = this.basedTrackPointList[basedTrackPointIndex].vector2;
+                    
+                    //lewa
+                    this.extendedTrackPointList.push(new BasedTrackPoint(
+                        basedTrackPointIndex.index,
+                        base.posX - Config.roadWidthBorder - Config.roadWidthAsphalt,
+                        base.posY,
+                        0));
+                    //lewa
+                    this.extendedTrackPointList.push(new BasedTrackPoint(
+                        basedTrackPointIndex.index + 1,
+                        base.posX - Config.roadWidthAsphalt,
+                        base.posY,
+                        0));
+                    //prawa
+                    this.extendedTrackPointList.push(new BasedTrackPoint(
+                        basedTrackPointIndex.index + 2,
+                        base.posX + Config.roadWidthAsphalt,
+                        base.posY,
+                        0));
+                    //prawa
+                    this.extendedTrackPointList.push(new BasedTrackPoint(
+                        basedTrackPointIndex.index + 3,
+                        base.posX + Config.roadWidthBorder + Config.roadWidthAsphalt,
+                        base.posY,
+                        0));
+                }
+
+                destroyTrack(){
+                    this.basedTrackPointList.splice(0);
+                    this.extendedTrackPointList.splice(0);
+                }
+
+                
+            }
+
+            
+            class GameManager{
+                basedPoindEndIndex;
+                constructor () {
+                    this.basedPoindEnd;
+                    this.selectBasedTrackPointEndStatment();
+                }
+            
+                
+                selectBasedTrackPointEndStatment(){
+                    let maxDelta = 999999;
+                    for(var i=0; i<trackManager.densityBasedTrackPoint; i++) {
+                        let delta = Math.abs(trackManager.basedTrackPointList[i].vector2.posX - driver.posX);
+                        if(maxDelta >= delta){
+                        this.basedPoindEndIndex = i; 
+                        } 
+                        else{
+                        break; 
+                        } 
+                    }
+                }
+
+            }
+            
+            function draw(){
+                ctx2.clearRect(0, 0, 800, 600);
+                trackManager.meshRoad.draw();
+                
+                driver.draw();
+            }
+
+            function physicUpdate(){
+                camera.update(Config.cameraSpeed);
+                driver.moveUpdate();
+                
+                gameManager.gameoverstatment();
+            }
+
+            const driver = new Driver (355, 370);
+            const camera = new Camera (0, 0);
+            
+            const trackManager = new TrackManager ();
+            const gameManager = new GameManager ();
+
+            setInterval(physicUpdate, Config.frameUpdate); 
+            setInterval(draw, Config.physicUpdate); 
+        });
+
+    </script>
+</body>
+</html>
