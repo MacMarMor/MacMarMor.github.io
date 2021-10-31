@@ -145,9 +145,71 @@
                 }
             }
 
-        
+            class  ObjectOnRoad {
+            constructor(posX, posY, type){
+                this.posX = posX;
+                this.posY = posY-camera.posY;
+                this.type = type;
+            }
+            
+            collider(){
+                
+                
+                if(Math.abs((this.posX - 10) - (driver.posX + 8)) < 20 && Math.abs((this.posY + 10 + camera.posY) - (driver.posY + 12)) < 15){
+                    if (this.type == "point"){
+                        gameManager.gameover();
+                    } else if (this.type == "obstacle") {
+                        objectOnRoadManager.killMe(this);
+                    } else {
+                        console.log("ERROR1: Nieznany obiekt");
+                    }
+                }
+            }
+            
+            draw(){
+                ctx2.beginPath();
+                if (this.type == "point"){
+                    ctx2.fillStyle = "red";
+                    ctx2.rect(this.posX, this.posY+camera.posY, 25, 25); 
+                } else if (this.type == "obstacle") {
+                    ctx2.fillStyle = "lightgreen";
+                    ctx2.rect(this.posX, this.posY+camera.posY, 20, 20); 
+                } else {
+                    console.log("ERROR2: Nieznany typ obiektu");
+                }
+                ctx2.fill();
+                ctx2.closePath();
+            }
+        }
 
-            //stat
+            class  ObjectOnRoadManager {
+                objectOnRoadList = new Array;
+                
+                constructor(){
+                    
+                }
+                
+                neObjectOnRoad(type){
+                    if (this.objectOnRoadList.length > 60) this.objectOnRoadList.splice(1, 40);
+                        
+                    let posX = Math.random()*(ctx2.canvas.width - 50) + 25;
+                    let posY = -25;
+                    this.objectOnRoadList.push(new ObjectOnRoad(posX, posY, type));
+                }
+
+                killMe(carnister){
+                    var index = this.objectOnRoadList.findIndex((e => e === carnister));
+                    this.objectOnRoadList.splice(index, 1);
+                }
+                
+                collider(){
+                    this.objectOnRoadList.forEach(e=>e.collider());
+                }
+
+                draw(){
+                    this.objectOnRoadList.forEach(e=>e.draw());
+                }
+            }
 
             class MeshTriangle{
                 constructor (a, b, c) {
@@ -324,30 +386,66 @@
                     }
                 }
 
+                newObjectOnRoad(){
+                    let r = Math.random();
+                    if(r>0.7) objectOnRoadManager.neObjectOnRoad("point")
+                    else if (r>0.3) objectOnRoadManager.neObjectOnRoad("obstacle")
+                }
+                
+                gameoverstatment(){
+                    let en = trackManager.basedTrackPointList[this.basedPoindEndIndex].vector2;
+                    let end = en.posX;
+                    let leftEndStatment = end - Config.roadWidthAsphalt - Config.roadWidthBorder;
+                    let rightEndStatment = end + Config.roadWidthAsphalt + Config.roadWidthBorder - 20;
+                    
+                    if(Config.tick<trackManager.densityBasedTrackPoint) {
+                        driver.posX = en.posX;
+                        Config.tick++;
+                    }
+                    if(driver.posX < leftEndStatment || driver.posX > rightEndStatment){
+                        this.gameover();
+                    }
+                    
+                    if(Math.abs(en.posY+camera.posY - driver.posY) > Math.abs(trackManager.basedTrackPointList[this.basedPoindEndIndex+1].vector2.posY +camera.posY- driver.posY))
+                    this.basedPoindEndIndex++;
+                    
+                }
+                
+                gameover(){
+                    trackManager.destroyTrack();
+                        trackManager.buildNewStart();
+                        
+                        Config.score = 0;
+                        Config.level = 1;
+                        
+                        Config.tick=0;
+                }
+
             }
             
             function draw(){
                 ctx2.clearRect(0, 0, 800, 600);
                 trackManager.meshRoad.draw();
-                
+                objectOnRoadManager.draw();
                 driver.draw();
             }
 
             function physicUpdate(){
                 camera.update(Config.cameraSpeed);
                 driver.moveUpdate();
-                
+                objectOnRoadManager.collider();
                 gameManager.gameoverstatment();
             }
 
             const driver = new Driver (355, 370);
             const camera = new Camera (0, 0);
-            
+            const objectOnRoadManager = new ObjectOnRoadManager ();
             const trackManager = new TrackManager ();
             const gameManager = new GameManager ();
 
             setInterval(physicUpdate, Config.frameUpdate); 
             setInterval(draw, Config.physicUpdate); 
+            setInterval(gameManager.newObjectOnRoad, 100); 
         });
 
     </script>
