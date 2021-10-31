@@ -24,13 +24,13 @@
             var Config = {
                 frameUpdate: 5,
                 physicUpdate: 5,
-                size: 100,
+                size: 120,
                 //podpisanie klawiszy
                 moveLeft: 65, // 65
                 moveRight: 68, //58
                 moveLeftAlt: 37, //37
                 moveRightAlt: 39, //39
-                //matematyka do rysowania drogi
+                //matematyka do rysowania drogi i liczenia punktów
                 spaceBetweenBasedTrackPoint: 50,
                 singleccelerationCurve: 1, 
                 maxAccelerationCurve: 10,
@@ -38,7 +38,6 @@
                 roadWidthAsphalt: 150,
                 roadWidthBorder: 25,
                 cameraSpeed: 5,
-                
                 kontener: 0,
                 punkty: 0,
             }
@@ -63,6 +62,16 @@
                 }
                 
             }, false);
+
+            class Counter {
+                constructor () {
+                }
+            draw() {
+                    ctx2.font = "20px Times New Roman";
+                    ctx2.fillStyle = "darkgrey";   
+                    ctx2.fillText("Zdobyles:   " + Config.punkty, 675, 15);
+                }
+            }
             
             //Driver
             class Driver {
@@ -272,9 +281,8 @@
                     ctx2.lineTo(triangle.b.posX + camera.posX, triangle.b.posY + camera.posY);
                     ctx2.lineTo(triangle.c.posX + camera.posX, triangle.c.posY + camera.posY);
                     ctx2.closePath();
-
                     //barwy drogi
-                    if(color % 12 == 0 || color % 12 == 4) color = "#000000"; //f5f5f5
+                    if(color % 12 == 0 || color % 12 == 4) color = "#f5f5f5"; //f5f5f5
                     if(color % 12 == 2 || color % 12 == 8) color = "#222222";
                     if(color % 12 == 6 || color % 12 == 10) color = "#ffff00";
                     ctx2.fillStyle = color;
@@ -319,9 +327,7 @@
                     }
                     if (calcX-Config.roadWidthAsphalt-Config.roadWidthBorder<0){
                         calcX = prev.vector2.posX;acceleration = 0;
-                    }
-                    
-                    
+                    }            
                     this.basedTrackPointList.push(new BasedTrackPoint(
                         prev.index + 1,
                         calcX,
@@ -332,7 +338,6 @@
                 newExtendedTrackPoint(basedTrackPointIndex){
                     let index = this.extendedTrackPointList.length;
                     let base = this.basedTrackPointList[basedTrackPointIndex].vector2;
-                    
                     //lewa
                     this.extendedTrackPointList.push(new BasedTrackPoint(
                         basedTrackPointIndex.index,
@@ -362,9 +367,7 @@
                 destroyTrack(){
                     this.basedTrackPointList.splice(0);
                     this.extendedTrackPointList.splice(0);
-                }
-
-                
+                }            
             }
 
             class GameManager{
@@ -415,9 +418,7 @@
                 gameover(){
                     trackManager.destroyTrack();
                         trackManager.buildNewStart();
-                        
                         Config.punkty = 0;
-                        Config.level = 1;
                         
                         Config.kontener=0;
                 }
@@ -425,7 +426,6 @@
                 punktyUp() {
                     Config.punkty += 10;
                 }
-
             }
             
             function draw(){
@@ -433,7 +433,7 @@
                 trackManager.meshRoad.draw();
                 objectOnRoadManager.draw();
                 driver.draw();
-                Counter.draw();
+                counter.draw();
             }
 
             function physicUpdate(){
@@ -441,16 +441,6 @@
                 driver.moveUpdate();
                 objectOnRoadManager.collider();
                 gameManager.gameoverstatment();
-            }
-
-            class Counter {
-                constructor () {
-                }
-            draw() {
-                    ctx2.font = "20px Times New Roman";
-                    ctx2.fillStyle = "darkgrey";   
-                    ctx2.fillText("Zdobyles:   " + Config.punkty, 675, 15);
-                }
             }
 
             const driver = new Driver (355, 370);
