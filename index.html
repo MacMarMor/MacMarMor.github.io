@@ -14,10 +14,10 @@
 -->
 
 <body onload="">
-    <canvas id="canvas"></canvas>
+    <canvas id="myCanvas"></canvas>
     <script>
         $( window ).on( "load", function() {
-            var ctx2 = $("#canvas")[0].getContext("2d");
+            var ctx2 = $("#myCanvas")[0].getContext("2d");
             ctx2.canvas.width  = 800;
             ctx2.canvas.height = 600;
             const dziura = 20;
@@ -165,7 +165,7 @@
                 this.type = type;
             }
             
-            collider(){
+            kolizja(){
                 if(Math.abs((this.posX - 10) - (driver.posX + 8)) < 20 && Math.abs((this.posY + 10 + camera.posY) - (driver.posY + 12)) < 15){
                     if (this.type == "point"){
                         gameManager.gameover();
@@ -214,8 +214,8 @@
                     this.objectOnRoadList.splice(index, 1);
                 }
                 
-                collider(){
-                    this.objectOnRoadList.forEach(e=>e.collider());
+                kolizja(){
+                    this.objectOnRoadList.forEach(e=>e.kolizja());
                 }
 
                 draw(){
@@ -436,7 +436,7 @@
             function physicUpdate(){
                 camera.update(Config.cameraSpeed);
                 driver.moveUpdate();
-                objectOnRoadManager.collider();
+                objectOnRoadManager.kolizja();
                 gameManager.gameoverstatment();
             }
 
